@@ -61,7 +61,7 @@ public class TracerConsumer implements WorkHandler<OneTracer> {
             long totalConsume = totalDealCount.longValue();
             boolean needInfo = totalConsume % 1000 == 0;
 
-            //压缩后的字节数组
+            //解压后的字节数组
             byte[] decompressBytes = ZstdUtils.decompressBytes(oneTracer.getBytes());
 
             TracerData tracerData = ProtostuffUtils.deserialize(decompressBytes, TracerData.class);
