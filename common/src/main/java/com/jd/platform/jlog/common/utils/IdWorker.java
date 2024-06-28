@@ -87,12 +87,15 @@ public class IdWorker {
         }
     }
 
-    //下一个ID生成算法
+    //雪花算法生成id
     public static long nextId() {
         long time = System.currentTimeMillis();
+        // 如果时钟回溯，就报错
         if (lastTime > time) {
             throw new RuntimeException("Clock is moving backwards, last time is %d milliseconds, current time is %d milliseconds" + lastTime);
         }
+        // 如果当前时间和上次生成ID的时间相同，则sequence自增1，如果自增后发现是0，则等下一个时间戳
+        // 如果当前时间和上次生成ID的时间不相同，则sequence从0开始
         if (lastTime == time) {
             if (0L == (sequence = ++sequence & SEQUENCE_MASK)) {
                 time = waitUntilNextTime(time);
@@ -100,7 +103,9 @@ public class IdWorker {
         } else {
             sequence = 0;
         }
+        // 记录本次生成ID的时间
         lastTime = time;
+        // 雪花算法生生成id，时间戳为 当前时间 - 2017.3.1的时间戳， workerId是根据ip地址确定的
         return ((time - EPOCH) << TIMESTAMP_LEFT_SHIFT_BITS) | (workerId << WORKER_ID_LEFT_SHIFT_BITS) | sequence;
     }
 

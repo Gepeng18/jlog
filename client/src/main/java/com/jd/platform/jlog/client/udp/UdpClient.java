@@ -79,8 +79,9 @@ public class UdpClient {
     private static class MyUdpEncoder extends MessageToMessageEncoder<TracerData> {
         @Override
         protected void encode(ChannelHandlerContext channelHandlerContext, TracerData tracerData, List<Object> list) {
+            // 序列化
             byte[] bytes = ProtostuffUtils.serialize(tracerData);
-
+            // 压缩
             byte[] compressBytes = ZstdUtils.compress(bytes);
 
             //判断压缩完是否过大，过大走http接口请求worker
@@ -93,14 +94,15 @@ public class UdpClient {
             ByteBuf buf = channelHandlerContext.alloc().buffer(compressBytes.length);
             buf.writeBytes(compressBytes);
             InetSocketAddress remoteAddress=null;
+            // 单播
             if(ModeHolder.getSendMode().getUnicast()){
-                //挑选worker
+                // 轮训挑选一个worker
                 String workerIpPort =  WorkerInfoHolder.chooseWorker();
                 if (workerIpPort == null) {
                     return;
                 }
                 String[] ipPort = workerIpPort.split(Constant.SPLITER);
-                //发往worker的ip
+                //发往worker
                 remoteAddress= new InetSocketAddress(ipPort[0], Integer.parseInt(ipPort[1]));
             }else{
                 remoteAddress=tracerData.getAddress();

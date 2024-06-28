@@ -139,6 +139,7 @@ public class UdpSender {
      * 往worker发traceBean
      */
     private static void send(TracerData tracerData) throws InterruptedException {
+        // 多播
         if(!ModeHolder.getSendMode().getUnicast()){
             List<String>ips= WorkerInfoHolder.selectWorkers();
             for(String ip:ips){
@@ -152,6 +153,7 @@ public class UdpSender {
             }
             return;
         }else {
+            // 单播
             Context.CHANNEL.writeAndFlush(tracerData);
         }
     }

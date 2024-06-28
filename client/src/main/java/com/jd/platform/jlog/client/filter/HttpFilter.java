@@ -62,6 +62,7 @@ public class HttpFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletResponse resp = (HttpServletResponse) servletResponse;
+        // Filter中将servletRequest包装成RequestWrapper
         RequestWrapper requestWrapper = new RequestWrapper((HttpServletRequest) servletRequest);
         long currentTImeMills = System.currentTimeMillis();
         String uri = requestWrapper.getRequestURI().replace("/", "");
@@ -114,11 +115,13 @@ public class HttpFilter implements Filter {
         // 包装响应对象 resp 并缓存响应数据
         ResponseWrapper mResp = new ResponseWrapper(resp);
         filterChain.doFilter(servletRequest, mResp);
+        // 把响应内容取出来，转成map
         byte[] contentBytes = mResp.getContent();
         String content = new String(contentBytes);
 
         Map<String, Object> map = FastJsonUtils.toMap(content);
 
+        // 根据配置判断是否提取tag，以及是否压缩
         Outcome outcome = ClientHandler.processResp(contentBytes, map);
 
         //此处可以对content做处理,然后再把content写回到输出流中
@@ -135,12 +138,13 @@ public class HttpFilter implements Filter {
      * 处理入参相关信息
      */
     private void parseRequestMap(RequestWrapper requestWrapper, TracerBean tracerBean) {
-        //request的各个入参
+        // 获取request的各个入参，封装到变量requestMap中
         Map<String, String[]> params = requestWrapper.getParameterMap();
         Map<String, Object> requestMap = new HashMap<>(params.size());
         for (String key : params.keySet()) {
             requestMap.put(key, params.get(key)[0]);
         }
+        // 将请求参数中的uid设置到tracerBean中
         tracerBean.setUid((String) requestMap.get("uid"));
 
         //对于@RequestBody类型的，可以通过该方法读取字符串。是个json串
@@ -148,11 +152,13 @@ public class HttpFilter implements Filter {
         if (StringUtil.isNotBlank(body)) {
             //将json转成map
             Map<String, Object> jsonMap = FastJsonUtils.toMap(body);
-            // 自定义的其他的参数对
+            // 设置到requestMap中
             requestMap.putAll(jsonMap);
         }
 
+        // 根据配置判断是否提取以及是否压缩，获得 Outcome，其中包括提取的tag以及将这些tag作为json字符串进行压缩
         Outcome out = ClientHandler.processReq(requestMap);
+        // 设置到 tracerBean的 requestContent中
         tracerBean.setRequestContent((byte[]) out.getContent());
     }
 

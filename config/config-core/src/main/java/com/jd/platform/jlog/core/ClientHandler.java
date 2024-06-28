@@ -15,7 +15,9 @@ public class ClientHandler {
 
 
     public static Outcome processReq(Map<String, Object> reqMap){
+        // 根据配置决定是否提取 tag标签
         Map<String, Object> tag = ExtractHandler.extractReqTag(reqMap);
+        // 根据配置决定是否压缩tagMap
         return CompressHandler.compressReq(tag);
     }
 
